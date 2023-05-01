@@ -21,7 +21,7 @@ export default {
   name: 'pushList',
   setup() {
     const router = useRouter();
-    const socket = io('http://localhost:3000');
+    const socket = io('https://port-0-softwareengineering-e9btb72mlh4kw9ax.sel4.cloudtype.app');
     let id = ref('');
     let members = ref([]);
 
