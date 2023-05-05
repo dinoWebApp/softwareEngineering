@@ -35,7 +35,6 @@ app.use(passport.session());
 app.use(bodyParser.urlencoded({extended : true}));
 app.use(express.json());
 app.use(cors());
-app.use(express.static(path.join(__dirname, 'pushlist/dist')));
 let db;
 
 MongoClient.connect(process.env.DB_URL, (err, client)=>{
@@ -46,9 +45,7 @@ MongoClient.connect(process.env.DB_URL, (err, client)=>{
   });
 });
 
-app.get('/', (req, res)=>{
-  res.sendFile(path.join(__dirname, 'pushlist/dist/index.html'));
-});
+
 
 io.on('connection', (socket) => {
   console.log('a user connected');
@@ -69,61 +66,77 @@ io.on('connection', (socket) => {
   
 });
 
-app.post('/api/sign-up', (req, res)=>{
+app.post('/signUp', (req, res)=>{
   console.log(req.body);
-  bcrypt.hash(req.body.pw, saltRounds, (err, hash)=>{
-    db.collection('members').insertOne({
+  db.collection('members').findOne({nickName : req.body.nickName})
+  .then(result=>{
+    if(result) {
+      res.send('nick existed');
+      throw new Error('nick fail');
+    }
+    else {
+      return db.collection('members').findOne({id : req.body.id})
+    }
+  })
+  .then(result=>{
+    if(result) {
+      res.send('id existed');
+      throw new Error('id fail');
+    }
+    else {
+      return bcrypt.hash(req.body.pw, saltRounds);
+    }
+  })
+  .then(hash=>{
+    return db.collection('members').insertOne({
+      nickName : req.body.nickName,
       id : req.body.id,
       pw : hash,
-    }, (err, result)=>{
-      if (err) console.log(err);
-      res.send('sign-up success');
+      category : req.body.category
     });
+  })
+  .then(()=>{
+    res.send('signUp success');
+  })
+  .catch(err=>{
+    console.log(err);
   });
 });
 
-app.post('/api/login', passport.authenticate('local', {
-  failureRedirect : '/api/loginFail',
+
+app.post('/login', passport.authenticate('local', {
+  failureRedirect : '/loginFail',
 }), (req, res)=>{
   console.log(req.body);
   db.collection('members').findOne({id : req.body.id}, (err, result)=>{
     if(err) console.log(err);
-    res.send('success');
+    res.send('login success');
   });
 });
 
-app.get('/api/loginFail', (req, res)=>{
+app.get('/loginFail', (req, res)=>{
   res.send('login fail');
 });
 
-app.get('/api/sign-up/id-check', (req, res)=>{
-  console.log(req.query.id);
-  db.collection('members').findOne({id : req.query.id}, (err, result)=>{
-    console.log(result);
-    if(result) {
-      res.send('existed');
-    } else res.send('success');
-  });
-});
 
-app.get('/api/login-check', loginCheck, (req, res)=>{
+
+app.get('/loginCheck', loginCheck, (req, res)=>{
   res.send(req.user.id);
 });
-app.get('/api/', (req, res)=>{
+
+app.get('/memberList', (req, res)=>{
   db.collection('members').find().toArray()
   .then(result=>{
     res.send(result);
   });
 });
 
-app.get('/api/logout', (req, res)=>{
+app.get('/logout', (req, res)=>{
   req.session.destroy();
   res.send('logout success');
 });
 
-app.get('*', (req, res)=>{
-  res.sendFile(path.join(__dirname, 'pushlist/dist/index.html'));
-});
+
 
 
 
