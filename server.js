@@ -59,12 +59,105 @@ io.on('connection', (socket) => {
     console.log(data);
     io.to(data.sendTo).emit('push', data.sendFrom);
   });
+
+  socket.on('send', (data)=>{
+    db.collection('chatRoom').findOne({roomName : data.roomName})
+    .then(result=>{
+      if(result) {
+        let curr = new Date();
+        let utc = curr.getTime() + (curr.getTimezoneOffset()*60*1000);
+        let KR_TIME_DIFF = 9*60*60*1000;
+        let kr_curr = new Date(utc + KR_TIME_DIFF);
+        let month = ("0" + (1 + kr_curr.getMonth())).slice(-2);
+        let day = ("0" + kr_curr.getDate()).slice(-2);
+        let hours = ("0" + kr_curr.getHours()).slice(-2);
+        let minutes = ("0" + kr_curr.getMinutes()).slice(-2);
+        let date = (month + '-' + day + ' ' + hours + ':' + minutes);
+        db.collection('chatRoom').updateOne({roomName : data.roomName}, {
+          $push : {
+            chats : 
+            {
+              sendFrom : data.sendFrom,
+              chat : data.chat,
+              chatId : result.lastChatId + 1,
+              date : date
+            }
+          },
+          $inc : {
+            lastChatId : 1
+          }
+        })
+        .then(()=>{
+          io.to(data.roomName).emit('broadcast', {
+            sendFrom : data.sendFrom,
+            chat : data.chat,
+            chatId : result.lastChatId + 1,
+            date : date
+          });
+        })
+        .catch(err=>{
+          console.log(err);
+        });
+      } else {
+        let curr = new Date();
+        let utc = curr.getTime() + (curr.getTimezoneOffset()*60*1000);
+        let KR_TIME_DIFF = 9*60*60*1000;
+        let kr_curr = new Date(utc + KR_TIME_DIFF);
+        let month = ("0" + (1 + kr_curr.getMonth())).slice(-2);
+        let day = ("0" + kr_curr.getDate()).slice(-2);
+        let hours = ("0" + kr_curr.getHours()).slice(-2);
+        let minutes = ("0" + kr_curr.getMinutes()).slice(-2);
+        let date = (month + '-' + day + ' ' + hours + ':' + minutes);
+        db.collection('chatRoom').insertOne({
+          roomName : data.roomName,
+          chats : [
+            {
+              sendFrom : data.sendFrom,
+              chat : data.chat,
+              chatId : 1,
+              date : date
+            }
+          ],
+          lastChatId : 1
+        })
+        .then(()=>{
+          io.to(data.roomName).emit('broadcast', {
+            sendFrom : data.sendFrom,
+            chat : data.chat,
+            chatId : 1,
+            date : date
+          });
+        })
+        .catch(err=>{
+          console.log(err);
+        });
+      }
+    })
+    .catch(err=>{
+      console.log(err)
+    });
+  });
+
   socket.on('leave', (data)=>{
     console.log('leave ' + data);
     socket.leave(data);
   });
   
 });
+
+//채팅방 로드
+app.get('/chatRoom', (req, res)=>{
+  db.collection('chatRoom').findOne({roomName : req.query.roomName})
+  .then(result=>{
+    res.send({
+      roomName : result.roomName,
+      chats : result.chats
+    });
+  })
+  .catch(err=>{
+    console.log(err);
+  })
+})
 
 app.post('/signUp', (req, res)=>{
   console.log(req.body);
