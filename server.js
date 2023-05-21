@@ -157,6 +157,44 @@ app.get('/chatRoom', (req, res)=>{
   .catch(err=>{
     console.log(err);
   })
+});
+
+app.get('/reportCheck', (req, res)=>{
+  let curr = new Date();
+  let utc = curr.getTime() + (curr.getTimezoneOffset()*60*1000);
+  let KR_TIME_DIFF = 9*60*60*1000;
+  let kr_curr = new Date(utc + KR_TIME_DIFF);
+  let month = ("0" + (1 + kr_curr.getMonth())).slice(-2);
+  let day = ("0" + kr_curr.getDate()).slice(-2);
+  let date = (month + '-' + day);
+  db.collection('members').findOne({id : req.query.id})
+  .then(result=>{
+    if(date === result.date) {
+      res.send(true);
+    } else {
+      res.send(false);
+    }
+  })
+  .catch(err=>{
+    console.log(err);
+  })
+});
+
+app.put('/reportCorrect', (req, res)=>{
+  let curr = new Date();
+  let utc = curr.getTime() + (curr.getTimezoneOffset()*60*1000);
+  let KR_TIME_DIFF = 9*60*60*1000;
+  let kr_curr = new Date(utc + KR_TIME_DIFF);
+  let month = ("0" + (1 + kr_curr.getMonth())).slice(-2);
+  let day = ("0" + kr_curr.getDate()).slice(-2);
+  let date = (month + '-' + day);
+  db.collection('members').updateOne({id : req.body.id}, {$set : {date : date}})
+  .then(()=>{
+    res.send('update success');
+  })
+  .catch(err=>{
+    console.log(err);
+  })
 })
 
 app.post('/signUp', (req, res)=>{
@@ -185,7 +223,8 @@ app.post('/signUp', (req, res)=>{
       nickName : req.body.nickName,
       id : req.body.id,
       pw : hash,
-      category : req.body.category
+      category : req.body.category,
+      date : 0
     });
   })
   .then(()=>{
