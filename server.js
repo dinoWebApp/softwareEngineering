@@ -224,7 +224,7 @@ app.post('/signUp', (req, res)=>{
       id : req.body.id,
       pw : hash,
       category : req.body.category,
-      date : 0
+      date : '0'
     });
   })
   .then(()=>{
