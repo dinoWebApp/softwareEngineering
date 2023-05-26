@@ -167,7 +167,7 @@ app.get('/reportCheck', (req, res)=>{
   let month = ("0" + (1 + kr_curr.getMonth())).slice(-2);
   let day = ("0" + kr_curr.getDate()).slice(-2);
   let date = (month + '-' + day);
-  db.collection('members').findOne({id : req.query.id})
+  db.collection('members').findOne({id : req.user.id})
   .then(result=>{
     if(date === result.date) {
       res.send(true);
@@ -188,7 +188,7 @@ app.put('/reportCorrect', (req, res)=>{
   let month = ("0" + (1 + kr_curr.getMonth())).slice(-2);
   let day = ("0" + kr_curr.getDate()).slice(-2);
   let date = (month + '-' + day);
-  db.collection('members').updateOne({id : req.body.id}, {$set : {date : date}})
+  db.collection('members').updateOne({id : req.user.id}, {$set : {date : date}})
   .then(()=>{
     res.send('update success');
   })
@@ -255,6 +255,15 @@ app.get('/loginFail', (req, res)=>{
 app.get('/loginCheck', loginCheck, (req, res)=>{
   res.send(req.user.id);
 });
+
+app.get('/userInfo', (req, res)=>{
+  let userInfo = {
+    nickName : req.user.nickName,
+    id : req.user.id,
+    category : req.user.category
+  }
+  res.send(userInfo);
+})
 
 app.get('/memberList', (req, res)=>{
   db.collection('members').find().toArray()
