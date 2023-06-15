@@ -253,7 +253,7 @@ app.get('/loginFail', (req, res)=>{
 
 
 app.get('/loginCheck', loginCheck, (req, res)=>{
-  res.send(req.user.id);
+  res.send(req.user.nickName);
 });
 
 app.get('/userInfo', (req, res)=>{
