@@ -266,7 +266,14 @@ app.get('/userInfo', (req, res)=>{
 })
 
 app.get('/memberList', (req, res)=>{
-  db.collection('members').find().toArray()
+  let curr = new Date();
+  let utc = curr.getTime() + (curr.getTimezoneOffset()*60*1000);
+  let KR_TIME_DIFF = 9*60*60*1000;
+  let kr_curr = new Date(utc + KR_TIME_DIFF);
+  let month = ("0" + (1 + kr_curr.getMonth())).slice(-2);
+  let day = ("0" + kr_curr.getDate()).slice(-2);
+  let date = (month + '-' + day);
+  db.collection('members').find({date : {$ne : date}}).toArray()
   .then(result=>{
     res.send(result);
   });
